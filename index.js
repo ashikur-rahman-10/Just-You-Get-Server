@@ -35,6 +35,7 @@ async function run() {
         client.connect();
 
         const usersCollections = client.db("JustYouGetDB").collection("users");
+        const productsCollections = client.db("JustYouGetDB").collection("products");
 
         // Users Api
         app.post('/users', async (req, res) => {
@@ -48,9 +49,22 @@ async function run() {
             res.send(result)
         })
 
-
+        // get all users
         app.get('/users', async (req, res) => {
             const result = await usersCollections.find().toArray()
+            res.send(result)
+        })
+
+        // Post a product
+        app.post('/products', async (req, res) => {
+            const product = req.body;
+            const result = await productsCollections.insertOne(product);
+            res.send(result)
+        })
+
+        // Get all products
+        app.get("/products,", async (req, res) => {
+            const result = await productsCollections.find().toArray();
             res.send(result)
         })
 
