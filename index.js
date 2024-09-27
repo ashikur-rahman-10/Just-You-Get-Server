@@ -154,6 +154,61 @@ async function run() {
             }
         });
 
+        // Get a product by id
+        app.get(`/products/:id`, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await productsCollections.findOne(query);
+            res.send(result);
+        });
+        // Delete a product by id
+        app.delete(`/products/:id`, async (req, res) => {
+            const id = req.params.id;
+            // console.log(id);
+            const query = { _id: new ObjectId(id) };
+            const result = await productsCollections.deleteOne(query);
+            res.send(result);
+        });
+        // Update a product
+        app.patch('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedProduct = req.body;
+            const updateDoc = {
+                $set: {
+                    productName: updatedProduct.productName,
+                    price: updatedProduct.price,
+                    quantity: updatedProduct.quantity,
+                    discounts: updatedProduct.discounts,
+                    category: updatedProduct.category,
+                    writerName: updatedProduct.writerName,
+                    keywords: updatedProduct.keywords,
+
+                }
+            }
+            const result = await productsCollections.updateOne(filter, updateDoc)
+            res.send(result)
+
+        })
+
+        // Re-stock products
+        app.patch('/products/restock/:id', async (req, res) => {
+            const id = req.params.id;
+            const restock = req.body;
+            const filter = { _id: new ObjectId(id) };
+
+            const thisProduct = await productsCollections.findOne(filter);
+            const updateDoc = {
+                $set: {
+                    quantity: parseInt(thisProduct?.quantity) + parseInt(restock?.quantity)
+                },
+            };
+
+            const result = await productsCollections.updateOne(filter, updateDoc)
+            res.send(result)
+
+        })
+
 
         // Post a Categories
         app.post('/categories', async (req, res) => {
@@ -424,6 +479,39 @@ async function run() {
             }
             const result = await orderCollections.findOne(filter)
             res.send(result);
+        });
+
+
+        // sells Reports
+
+        app.get('/sales-report', async (req, res) => {
+            const { startDate, endDate } = req.query;
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            try {
+                const query = {
+                    orderCreationDate: {
+                        $gte: start,
+                        $lte: end
+                    },
+                    paymentStatus: true,
+                };
+
+                const salesItem = await orderCollections.find(query).toArray();
+                const orders = await orderCollections.find().toArray()
+
+                // Calculate total sales and other summary data if needed
+                const totalSales = salesItem.reduce((acc, order) => acc + order.totalPrice, 0);
+
+                res.send({
+                    totalSales,
+                    salesItem
+                });
+            } catch (error) {
+                console.error("Error fetching sales data:", error);
+                res.status(500).send("An error occurred while fetching sales data.");
+            }
         });
 
 
